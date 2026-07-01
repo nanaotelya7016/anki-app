@@ -64,6 +64,10 @@ async fn main() {
 
     println!("DB接続成功");
 
+    // 起動時にマイグレーションを自動実行(テーブルがなければ作成、あればスキップ)
+    sqlx::migrate!().run(&pool).await.expect("マイグレーション失敗");
+    println!("マイグレーション完了");
+
     let state = AppState { pool };
 
     // Router: パスとHTTPメソッドごとにハンドラを登録する
