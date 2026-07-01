@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: anki-app
+    runtime: rust
+    buildCommand: cargo build --release
+    startCommand: ./target/release/week4_axum_basics
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: anki-db
+          property: connectionString
+
+databases:
+  - name: anki-db
+    plan: free
+    databaseName: anki_db
+    user: anki
