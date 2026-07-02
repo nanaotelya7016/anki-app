@@ -18,13 +18,25 @@
 
     main { max-width: 700px; margin: 32px auto; padding: 0 16px; }
 
-    section { background: white; border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-    section h2 { font-size: 1rem; margin-bottom: 16px; color: #555; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    section {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    section h2 {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      color: #555;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
 
-    /* フォーム */
     .row { display: flex; gap: 8px; }
     input[type="text"] {
-      flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;
+      flex: 1; padding: 8px 12px;
+      border: 1px solid #ddd; border-radius: 6px;
       font-size: 0.95rem;
     }
     button {
@@ -35,10 +47,15 @@
     .btn-primary:hover { background: #2471a3; }
     .btn-study   { background: #27ae60; color: white; font-size: 0.85rem; padding: 6px 12px; }
     .btn-study:hover { background: #1e8449; }
-    .btn-next    { background: #8e44ad; color: white; }
-    .btn-next:hover { background: #76389d; }
-    .btn-reveal  { background: #e67e22; color: white; }
-    .btn-reveal:hover { background: #ca6f1e; }
+
+    /* 評価ボタン */
+    .rating-buttons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .btn-forgot  { background: #e74c3c; color: white; flex: 1; }
+    .btn-forgot:hover  { background: #c0392b; }
+    .btn-hard    { background: #e67e22; color: white; flex: 1; }
+    .btn-hard:hover    { background: #ca6f1e; }
+    .btn-good    { background: #27ae60; color: white; flex: 1; }
+    .btn-good:hover    { background: #1e8449; }
 
     /* デッキリスト */
     #deck-list { list-style: none; }
@@ -49,26 +66,37 @@
     #deck-list li:last-child { border-bottom: none; }
     .deck-name { font-weight: 500; }
     .deck-id   { font-size: 0.78rem; color: #aaa; margin-left: 6px; }
-    #empty-msg { color: #aaa; font-size: 0.9rem; }
 
     /* 学習カード */
     #study-area { display: none; }
     #card-box {
       border: 2px solid #2980b9; border-radius: 8px;
-      min-height: 120px; padding: 24px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 130px; padding: 24px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       margin-bottom: 16px; text-align: center;
     }
     #card-front { font-size: 1.4rem; font-weight: bold; color: #2c3e50; }
-    #card-back  { font-size: 1rem; color: #555; margin-top: 12px; display: none; padding-top: 12px; border-top: 1px solid #ddd; width: 100%; }
-    #study-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-    #no-card-msg { color: #e74c3c; font-size: 0.9rem; }
+    #card-back  {
+      font-size: 1rem; color: #555;
+      margin-top: 12px; display: none;
+      padding-top: 12px; border-top: 1px solid #ddd; width: 100%;
+    }
+    #card-meta {
+      font-size: 0.75rem; color: #aaa;
+      margin-top: 8px;
+    }
+    #study-controls { display: flex; gap: 8px; justify-content: center; }
+    #btn-reveal { background: #8e44ad; color: white; width: 100%; }
+    #btn-reveal:hover { background: #76389d; }
+    #no-card-msg { color: #e74c3c; font-size: 0.9rem; text-align: center; }
     #studying-deck { font-size: 0.85rem; color: #888; margin-bottom: 12px; }
+    #due-count { font-size: 0.8rem; color: #27ae60; font-weight: bold; float: right; }
   </style>
 </head>
 <body>
 
-<header>📚 Anki風アプリ (MVP)</header>
+<header>📚 Anki風アプリ (SRS対応)</header>
 
 <main>
 
@@ -84,38 +112,53 @@
   <!-- デッキ一覧 -->
   <section>
     <h2>デッキ一覧</h2>
-    <ul id="deck-list"><li id="empty-msg">読み込み中...</li></ul>
+    <ul id="deck-list"><li style="color:#aaa">読み込み中...</li></ul>
   </section>
 
   <!-- 学習エリア -->
   <section id="study-area">
-    <h2>学習</h2>
+    <h2>学習 <span id="due-count"></span></h2>
     <p id="studying-deck"></p>
     <div id="card-box">
       <div id="card-front"></div>
       <div id="card-back"></div>
+      <div id="card-meta"></div>
     </div>
-    <p id="no-card-msg" style="display:none; text-align:center;">このデッキにカードがありません。</p>
+    <p id="no-card-msg" style="display:none;">このデッキにカードがありません。</p>
+
+    <!-- 答えを見るボタン -->
     <div id="study-controls">
-      <button class="btn-reveal" id="btn-reveal" onclick="revealBack()">答えを見る</button>
-      <button class="btn-next"   id="btn-next"   onclick="nextCard()" style="display:none;">次のカード</button>
+      <button id="btn-reveal" onclick="revealBack()">答えを見る</button>
+    </div>
+
+    <!-- 評価ボタン（答えを見た後に表示） -->
+    <div id="rating-area" style="display:none; margin-top:12px;">
+      <p style="text-align:center; font-size:0.85rem; color:#888; margin-bottom:8px;">
+        どのくらい覚えていましたか？
+      </p>
+      <div class="rating-buttons">
+        <button class="btn-forgot" onclick="submitReview(1)">😵 忘れた</button>
+        <button class="btn-hard"   onclick="submitReview(3)">🤔 難しい</button>
+        <button class="btn-good"   onclick="submitReview(5)">✅ 覚えた</button>
+      </div>
     </div>
   </section>
 
 </main>
 
 <script>
-  let currentDeckId = null;
+  let currentDeckId   = null;
+  let currentCard     = null;  // 現在表示中のカード（id含む）
 
   // ===== デッキ一覧の読み込み =====
   async function loadDecks() {
-    const res  = await fetch('/decks');
+    const res   = await fetch('/decks');
     const decks = await res.json();
     const list  = document.getElementById('deck-list');
     list.innerHTML = '';
 
     if (decks.length === 0) {
-      list.innerHTML = '<li id="empty-msg">デッキがありません</li>';
+      list.innerHTML = '<li style="color:#aaa">デッキがありません</li>';
       return;
     }
 
@@ -159,33 +202,55 @@
 
   // ===== 次のカードを取得 =====
   async function nextCard() {
+    // UIをリセット
+    document.getElementById('card-back').style.display    = 'none';
+    document.getElementById('card-meta').style.display    = 'none';
+    document.getElementById('btn-reveal').style.display   = 'inline-block';
+    document.getElementById('rating-area').style.display  = 'none';
+    document.getElementById('no-card-msg').style.display  = 'none';
+
     const res = await fetch(`/decks/${currentDeckId}/study`);
 
-    document.getElementById('card-back').style.display  = 'none';
-    document.getElementById('btn-reveal').style.display = 'inline-block';
-    document.getElementById('btn-next').style.display   = 'none';
-    document.getElementById('no-card-msg').style.display = 'none';
-
     if (res.status === 404) {
-      document.getElementById('card-front').textContent  = '';
+      document.getElementById('card-front').textContent   = '';
       document.getElementById('no-card-msg').style.display = 'block';
       document.getElementById('btn-reveal').style.display  = 'none';
+      document.getElementById('due-count').textContent     = '';
       return;
     }
 
-    const card = await res.json();
-    document.getElementById('card-front').textContent = card.front;
-    document.getElementById('card-back').textContent  = card.back;
+    currentCard = await res.json();
+    document.getElementById('card-front').textContent = currentCard.front;
+    document.getElementById('card-back').textContent  = currentCard.back;
+
+    // 次回出題日を表示
+    const meta = `次回出題: ${currentCard.next_review}　間隔: ${currentCard.interval}日`;
+    document.getElementById('card-meta').textContent  = meta;
   }
 
   // ===== 答えを表示 =====
   function revealBack() {
-    document.getElementById('card-back').style.display  = 'block';
-    document.getElementById('btn-reveal').style.display = 'none';
-    document.getElementById('btn-next').style.display   = 'inline-block';
+    document.getElementById('card-back').style.display   = 'block';
+    document.getElementById('card-meta').style.display   = 'block';
+    document.getElementById('btn-reveal').style.display  = 'none';
+    document.getElementById('rating-area').style.display = 'block';
   }
 
-  // ===== Enterキーでデッキ作成 =====
+  // ===== 評価を送信してSM-2を更新 =====
+  async function submitReview(quality) {
+    if (!currentCard) return;
+
+    await fetch(`/cards/${currentCard.id}/review`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ quality }),
+    });
+
+    // 次のカードへ
+    nextCard();
+  }
+
+  // Enterキーでデッキ作成
   document.getElementById('deck-name-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') createDeck();
   });
